@@ -10,15 +10,29 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.exceptions import TelegramBadRequest
 
-# === ЗАГРУЗКА ТОКЕНОВ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ===
+# === ЗАГРУЗКА ТОКЕНОВ (СМЕШАННЫЙ РЕЖИМ) ===
+# BOT_TOKEN - ТОЛЬКО из переменных окружения хостинга
+# FLYER_TOKEN - из .env файла или переменных окружения
+
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
+
+# Загружаем FLYER_TOKEN из .env файла (если есть)
+FLYER_TOKEN = None
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Загружаем переменные из файла .env
+    FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
+    print("✅ Файл .env успешно загружен для FLYER_TOKEN")
+except ImportError:
+    # Если нет python-dotenv, пробуем из переменных окружения
+    FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
+    print("⚠️ Модуль python-dotenv не установлен, FLYER_TOKEN из окружения")
 
 # Проверяем токен бота - ОБЯЗАТЕЛЬНО для работы
 if not BOT_TOKEN:
     print("❌ ОШИБКА: Токен бота не найден в переменных окружения!")
-    print("ℹ️ На Bothost: зайдите в Settings → Environment Variables")
-    print("Добавьте переменную: BOT_TOKEN = ваш_токен")
+    print("ℹ️ Для локального запуска добавьте BOT_TOKEN в .env файл")
+    print("ℹ️ Для хостинга (Bothost): Settings → Environment Variables → BOT_TOKEN")
     exit(1)
 
 print(f"✅ Бот инициализирован с токеном: {BOT_TOKEN[:10]}...")
@@ -28,11 +42,11 @@ ADMINS = [6693423093]  # ID владельца (основного админа)
 ADMINS_FILE = 'admins.txt'  # Файл для хранения списка админов
 DB_FILE = 'users.db'
 
-# ИНИЦИАЛИЗИРУЕМ ПЕРЕМЕННЫЕ FLYER ДО ИСПОЛЬЗОВАНИЯ
+# ИНИЦИАЛИЗИРУЕМ ПЕРЕМЕННЫЕ FLYER
 FLYER_API_ACTIVE = False
 flyer = None
 
-# Flyer токен - необязательный, но если нужен
+# Flyer токен - необязательный
 if FLYER_TOKEN:
     print("✅ Flyer токен найден")
     FLYER_API_ACTIVE = True
@@ -58,7 +72,7 @@ if FLYER_API_ACTIVE and FLYER_TOKEN:
         print("❌ Модуль flyerapi не установлен")
         FLYER_API_ACTIVE = False
         flyer = None
-elif not FLYER_API_ACTIVE:
+elif not FLYER_API_ACTIVE or flyer is None:
     # Заглушка для работы без Flyer
     class DummyFlyer:
         async def check(self, user_id):
@@ -1546,5 +1560,6 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 

@@ -10,49 +10,40 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.exceptions import TelegramBadRequest
 
-# === ЗАГРУЗКА ТОКЕНОВ (СМЕШАННЫЙ РЕЖИМ) ===
-# BOT_TOKEN - ТОЛЬКО из переменных окружения хостинга
-# FLYER_TOKEN - из .env файла или переменных окружения
+# === ВСТРОЕННЫЙ .env ФАЙЛ В КОДЕ ===
+# Вы можете указать токены здесь или оставить пустыми для настройки на хостинге
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+# Токены по умолчанию (можно изменить здесь или оставить пустыми)
+DEFAULT_BOT_TOKEN = ""  # Оставьте пустым для настройки на Bothost
+DEFAULT_FLYER_TOKEN = ""  # Оставьте пустым, если не нужен Flyer
 
-# Загружаем FLYER_TOKEN из .env файла (если есть)
-FLYER_TOKEN = None
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # Загружаем переменные из файла .env
-    FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
-    print("✅ Файл .env успешно загружен для FLYER_TOKEN")
-except ImportError:
-    # Если нет python-dotenv, пробуем из переменных окружения
-    FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
-    print("⚠️ Модуль python-dotenv не установлен, FLYER_TOKEN из окружения")
+# === ЗАГРУЗКА ТОКЕНОВ ===
+# Приоритет: 1. Переменные окружения хостинга, 2. Значения выше, 3. Ошибка
 
-# Проверяем токен бота - ОБЯЗАТЕЛЬНО для работы
+BOT_TOKEN = os.environ.get("BOT_TOKEN") or DEFAULT_BOT_TOKEN
+FLYER_TOKEN = os.environ.get("FLYER_TOKEN") or DEFAULT_FLYER_TOKEN
+
+# Проверяем токен бота
 if not BOT_TOKEN:
-    print("❌ ОШИБКА: Токен бота не найден в переменных окружения!")
-    print("ℹ️ Для локального запуска добавьте BOT_TOKEN в .env файл")
-    print("ℹ️ Для хостинга (Bothost): Settings → Environment Variables → BOT_TOKEN")
+    print("❌ ОШИБКА: Токен бота не найден!")
+    print("\nРЕШЕНИЯ:")
+    print("1. ДЛЯ BOTHOST: Добавьте BOT_TOKEN в Environment Variables")
+    print("2. ДЛЯ ЛОКАЛЬНОГО ЗАПУСКА: Укажите токен в коде выше (DEFAULT_BOT_TOKEN)")
+    print("\nТекущие настройки:")
+    print(f"BOT_TOKEN из окружения: {bool(os.environ.get('BOT_TOKEN'))}")
+    print(f"DEFAULT_BOT_TOKEN указан: {bool(DEFAULT_BOT_TOKEN)}")
     exit(1)
 
-print(f"✅ Бот инициализирован с токеном: {BOT_TOKEN[:10]}...")
+print(f"✅ Бот инициализирован")
+if FLYER_TOKEN:
+    print("✅ Flyer токен найден")
+else:
+    print("⚠️ Flyer токен не найден. Будет использована заглушка")
 
 # --- ОСТАЛЬНАЯ КОНФИГУРАЦИЯ ---
 ADMINS = [6693423093]  # ID владельца (основного админа)
 ADMINS_FILE = 'admins.txt'  # Файл для хранения списка админов
 DB_FILE = 'users.db'
-
-# ИНИЦИАЛИЗИРУЕМ ПЕРЕМЕННЫЕ FLYER
-FLYER_API_ACTIVE = False
-flyer = None
-
-# Flyer токен - необязательный
-if FLYER_TOKEN:
-    print("✅ Flyer токен найден")
-    FLYER_API_ACTIVE = True
-else:
-    print("⚠️ Flyer токен не найден. Бот будет работать без проверки подписок.")
-    FLYER_API_ACTIVE = False
 
 # Глобальный кэш админов для производительности
 ADMINS_CACHE = None
@@ -62,24 +53,24 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Инициализация FlyerApi или заглушки
-if FLYER_API_ACTIVE and FLYER_TOKEN:
+# Заглушка для проверки подписок (всегда возвращает True для разработки)
+class DummyFlyer:
+    async def check(self, user_id):
+        await asyncio.sleep(0.1) 
+        return {'subscribed': True}
+
+flyer = DummyFlyer()
+
+# Если есть FLYER_TOKEN, пробуем инициализировать FlyerAPI
+if FLYER_TOKEN:
     try:
         from flyerapi import Flyer 
         flyer = Flyer(FLYER_TOKEN)
         print("✅ FlyerApi успешно инициализирован")
     except ImportError:
-        print("❌ Модуль flyerapi не установлен")
-        FLYER_API_ACTIVE = False
-        flyer = None
-elif not FLYER_API_ACTIVE or flyer is None:
-    # Заглушка для работы без Flyer
-    class DummyFlyer:
-        async def check(self, user_id):
-            await asyncio.sleep(0.1) 
-            return {'subscribed': True}
-    flyer = DummyFlyer()
-    print("ℹ️ Используется заглушка FlyerApi")
+        print("⚠️ Модуль flyerapi не установлен. Используется заглушка")
+    except Exception as e:
+        print(f"⚠️ Ошибка инициализации FlyerApi: {e}. Используется заглушка")
 
 # --- ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНАМИ ---
 def load_admins():
@@ -1560,6 +1551,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

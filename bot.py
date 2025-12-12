@@ -11,7 +11,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 # === ВСТАВЬТЕ ТОКЕНЫ СЮДА ===
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-FLYER_TOKEN = "ВАШ_FLYER_ТОКЕН"        # <-- ВСТАВЬТЕ СЮДА
+FLYER_TOKEN = "FL-LMcOmS-vfwSbD-pijmzN-ELiljd"        # <-- ВСТАВЬТЕ СЮДА
 
 if not BOT_TOKEN:
     print("❌ BOT_TOKEN не найден!")
@@ -1528,6 +1528,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 

@@ -10,26 +10,16 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.exceptions import TelegramBadRequest
 
-# === ЗАГРУЗКА ТОКЕНОВ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ (ДЛЯ BOTHOST) ===
+# === ПРОСТАЯ ЗАГРУЗКА ТОКЕНОВ ===
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
+FLYER_TOKEN = os.environ.get("FLYER_TOKEN", "")
 
-# Проверяем токен бота - ОБЯЗАТЕЛЬНО для работы
 if not BOT_TOKEN:
-    print("❌ ОШИБКА: Токен бота не найден в переменных окружения!")
-    print("ℹ️ На Bothost: зайдите в Settings → Environment Variables")
-    print("Добавьте переменную: BOT_TOKEN = ваш_токен")
+    print("❌ ОШИБКА: Токен бота не найден!")
+    print("ℹ️ На Bothost: Settings → Environment Variables → BOT_TOKEN")
     exit(1)
 
-# Flyer токен - необязательный, но если нужен
-if not FLYER_TOKEN:
-    print("⚠️ Flyer токен не найден. Бот будет работать без проверки подписок.")
-    FLYER_API_ACTIVE = False
-else:
-    print("✅ Flyer токен найден")
-    FLYER_API_ACTIVE = True
-
-print(f"✅ Бот инициализирован")
+print(f"✅ Бот инициализирован с токеном: {BOT_TOKEN[:10]}...")
 
 # --- ОСТАЛЬНАЯ КОНФИГУРАЦИЯ ---
 ADMINS = [6558623491]  # ID владельца (основного админа)
@@ -1543,3 +1533,4 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+

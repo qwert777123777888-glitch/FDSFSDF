@@ -10,21 +10,35 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.exceptions import TelegramBadRequest
 
-# === ПРОСТАЯ ЗАГРУЗКА ТОКЕНОВ ===
+# === ЗАГРУЗКА ТОКЕНОВ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ===
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-FLYER_TOKEN = os.environ.get("FLYER_TOKEN", "")
+FLYER_TOKEN = os.environ.get("FLYER_TOKEN")
 
+# Проверяем токен бота - ОБЯЗАТЕЛЬНО для работы
 if not BOT_TOKEN:
-    print("❌ ОШИБКА: Токен бота не найден!")
-    print("ℹ️ На Bothost: Settings → Environment Variables → BOT_TOKEN")
+    print("❌ ОШИБКА: Токен бота не найден в переменных окружения!")
+    print("ℹ️ На Bothost: зайдите в Settings → Environment Variables")
+    print("Добавьте переменную: BOT_TOKEN = ваш_токен")
     exit(1)
 
 print(f"✅ Бот инициализирован с токеном: {BOT_TOKEN[:10]}...")
 
 # --- ОСТАЛЬНАЯ КОНФИГУРАЦИЯ ---
-ADMINS = [6558623491]  # ID владельца (основного админа)
+ADMINS = [6693423093]  # ID владельца (основного админа)
 ADMINS_FILE = 'admins.txt'  # Файл для хранения списка админов
 DB_FILE = 'users.db'
+
+# ИНИЦИАЛИЗИРУЕМ ПЕРЕМЕННЫЕ FLYER ДО ИСПОЛЬЗОВАНИЯ
+FLYER_API_ACTIVE = False
+flyer = None
+
+# Flyer токен - необязательный, но если нужен
+if FLYER_TOKEN:
+    print("✅ Flyer токен найден")
+    FLYER_API_ACTIVE = True
+else:
+    print("⚠️ Flyer токен не найден. Бот будет работать без проверки подписок.")
+    FLYER_API_ACTIVE = False
 
 # Глобальный кэш админов для производительности
 ADMINS_CACHE = None
@@ -37,22 +51,21 @@ dp = Dispatcher()
 # Инициализация FlyerApi или заглушки
 if FLYER_API_ACTIVE and FLYER_TOKEN:
     try:
-        from flyerapi import Flyer
+        from flyerapi import Flyer 
         flyer = Flyer(FLYER_TOKEN)
         print("✅ FlyerApi успешно инициализирован")
     except ImportError:
         print("❌ Модуль flyerapi не установлен")
         FLYER_API_ACTIVE = False
         flyer = None
-else:
+elif not FLYER_API_ACTIVE:
     # Заглушка для работы без Flyer
     class DummyFlyer:
         async def check(self, user_id):
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1) 
             return {'subscribed': True}
     flyer = DummyFlyer()
     print("ℹ️ Используется заглушка FlyerApi")
-    FLYER_API_ACTIVE = False
 
 # --- ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНАМИ ---
 def load_admins():
@@ -1533,4 +1546,5 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 

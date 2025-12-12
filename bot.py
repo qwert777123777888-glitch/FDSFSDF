@@ -1,6 +1,6 @@
+import os
 import asyncio
 import logging
-import os
 import sqlite3
 from datetime import datetime
 from aiogram import Bot, Dispatcher, types, F
@@ -8,69 +8,46 @@ from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from aiogram.exceptions import TelegramBadRequest
 
-# === ВСТРОЕННЫЙ .env ФАЙЛ В КОДЕ ===
-# Вы можете указать токены здесь или оставить пустыми для настройки на хостинге
+# === ВСТАВЬТЕ ТОКЕНЫ СЮДА ===
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+FLYER_TOKEN = "ВАШ_FLYER_ТОКЕН"        # <-- ВСТАВЬТЕ СЮДА
 
-# Токены по умолчанию (можно изменить здесь или оставить пустыми)
-DEFAULT_BOT_TOKEN = ""  # Оставьте пустым для настройки на Bothost
-DEFAULT_FLYER_TOKEN = ""  # Оставьте пустым, если не нужен Flyer
-
-# === ЗАГРУЗКА ТОКЕНОВ ===
-# Приоритет: 1. Переменные окружения хостинга, 2. Значения выше, 3. Ошибка
-
-BOT_TOKEN = os.environ.get("BOT_TOKEN") or DEFAULT_BOT_TOKEN
-FLYER_TOKEN = os.environ.get("FLYER_TOKEN") or DEFAULT_FLYER_TOKEN
-
-# Проверяем токен бота
 if not BOT_TOKEN:
-    print("❌ ОШИБКА: Токен бота не найден!")
-    print("\nРЕШЕНИЯ:")
-    print("1. ДЛЯ BOTHOST: Добавьте BOT_TOKEN в Environment Variables")
-    print("2. ДЛЯ ЛОКАЛЬНОГО ЗАПУСКА: Укажите токен в коде выше (DEFAULT_BOT_TOKEN)")
-    print("\nТекущие настройки:")
-    print(f"BOT_TOKEN из окружения: {bool(os.environ.get('BOT_TOKEN'))}")
-    print(f"DEFAULT_BOT_TOKEN указан: {bool(DEFAULT_BOT_TOKEN)}")
+    print("❌ BOT_TOKEN не найден!")
+    print("Добавьте в Environment Variables: BOT_TOKEN и FLYER_TOKEN")
     exit(1)
 
-print(f"✅ Бот инициализирован")
-if FLYER_TOKEN:
-    print("✅ Flyer токен найден")
-else:
-    print("⚠️ Flyer токен не найден. Будет использована заглушка")
+print(f"✅ Бот запускается...")
 
-# --- ОСТАЛЬНАЯ КОНФИГУРАЦИЯ ---
-ADMINS = [6693423093]  # ID владельца (основного админа)
-ADMINS_FILE = 'admins.txt'  # Файл для хранения списка админов
+# --- КОНФИГУРАЦИЯ ---
+ADMINS = [6693423093]
+ADMINS_FILE = 'admins.txt'
 DB_FILE = 'users.db'
-
-# Глобальный кэш админов для производительности
-ADMINS_CACHE = None
 
 # --- ИНИЦИАЛИЗАЦИЯ ---
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Заглушка для проверки подписок (всегда возвращает True для разработки)
-class DummyFlyer:
-    async def check(self, user_id):
-        await asyncio.sleep(0.1) 
-        return {'subscribed': True}
+# --- FLYER API ---
+try:
+    from flyerapi import Flyer
+    flyer = Flyer(FLYER_TOKEN)
+    print(f"✅ FlyerAPI подключен")
+except ImportError:
+    print(f"❌ flyerapi не установлен")
+    class DummyFlyer:
+        async def check(self, user_id):
+            return {'subscribed': True}
+    flyer = DummyFlyer()
+except Exception as e:
+    print(f"⚠️ Ошибка FlyerAPI: {e}")
+    class DummyFlyer:
+        async def check(self, user_id):
+            return {'subscribed': True}
+    flyer = DummyFlyer()
 
-flyer = DummyFlyer()
-
-# Если есть FLYER_TOKEN, пробуем инициализировать FlyerAPI
-if FLYER_TOKEN:
-    try:
-        from flyerapi import Flyer 
-        flyer = Flyer(FLYER_TOKEN)
-        print("✅ FlyerApi успешно инициализирован")
-    except ImportError:
-        print("⚠️ Модуль flyerapi не установлен. Используется заглушка")
-    except Exception as e:
-        print(f"⚠️ Ошибка инициализации FlyerApi: {e}. Используется заглушка")
 
 # --- ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ АДМИНАМИ ---
 def load_admins():
@@ -1551,6 +1528,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
